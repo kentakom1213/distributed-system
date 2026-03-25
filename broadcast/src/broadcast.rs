@@ -2,6 +2,7 @@ use std::collections::HashSet;
 
 use crate::message::{MessageId, NodeId};
 
+#[derive(Debug)]
 pub struct Broadcast {
     node_id: NodeId,
     seq: u64,

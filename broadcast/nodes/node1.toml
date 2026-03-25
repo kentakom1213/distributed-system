@@ -1,0 +1,7 @@
+node_id = 1
+
+[network]
+listen_addr = "127.0.0.1:8000"
+peers = [
+    "127.0.0.1:8001"
+]
