@@ -1,4 +1,7 @@
 use serde::{Deserialize, Serialize};
+use tokio::io::{AsyncBufReadExt, AsyncWriteExt};
+
+use crate::BroadcastError;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct NodeId(pub usize);
@@ -25,6 +28,34 @@ pub enum Message {
         sender: NodeId,
         payload: String,
     },
+}
+
+/// メッセージを改行区切りの JSON 形式で送信する
+pub async fn send_message<W: AsyncWriteExt + Unpin>(
+    mut w: W,
+    msg: &Message,
+) -> Result<(), BroadcastError> {
+    let json = serde_json::to_string(msg)?;
+
+    w.write_all(json.as_bytes()).await?;
+    w.write_all(b"\n").await?;
+
+    Ok(())
+}
+
+/// 改行区切りの JSON メッセージを受信する
+pub async fn receive_message<R: AsyncBufReadExt + Unpin>(
+    r: &mut R,
+) -> Result<Message, BroadcastError> {
+    let mut line = String::new();
+
+    let n = r.read_line(&mut line).await?;
+    if n == 0 {
+        return Err(BroadcastError::Closed);
+    }
+
+    let msg: Message = serde_json::from_str(&line.trim())?;
+    Ok(msg)
 }
 
 #[cfg(test)]

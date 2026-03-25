@@ -6,6 +6,9 @@ pub enum BroadcastError {
     #[error("serialization error: {0}")]
     Serialization(#[from] serde_json::Error),
 
+    #[error("connection closed")]
+    Closed,
+
     #[error("invalid message: {0}")]
     InvalidMessage(String),
 

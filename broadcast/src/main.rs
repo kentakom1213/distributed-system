@@ -29,7 +29,7 @@ async fn run() -> Result<(), BroadcastError> {
     let conf_file = fs::read_to_string(args.conf_path)?;
     let conf: Config = toml::from_str(&conf_file)?;
 
-    tracing::info!("{}: Initializing", conf.node_id);
+    tracing::info!("[{}] Initializing", conf.node_id);
 
     // ノードを起動
     let mut node = Node::new(conf);

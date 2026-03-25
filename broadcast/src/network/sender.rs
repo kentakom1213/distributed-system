@@ -1,21 +1,22 @@
-use std::net::SocketAddr;
+use tokio::net::TcpStream;
 
-use tokio::{io::AsyncWriteExt, net::TcpStream};
+use crate::{
+    BroadcastError,
+    message::{Message, send_message},
+};
 
-use crate::BroadcastError;
-
-pub async fn send(addr: SocketAddr, buf: &[u8]) -> Result<(), BroadcastError> {
-    let mut stream = TcpStream::connect(addr).await?;
-
-    stream.write_all(buf).await?;
-
-    Ok(())
+pub struct Sender {
+    pub stream: TcpStream,
 }
 
-pub async fn send_all(peers: &[SocketAddr], buf: &[u8]) {
-    for peer in peers {
-        if let Err(e) = send(*peer, buf).await {
-            tracing::error!("send error {peer}: {e}");
-        }
+impl Sender {
+    pub async fn new(addr: &str) -> Result<Self, BroadcastError> {
+        let stream = TcpStream::connect(addr).await?;
+
+        Ok(Self { stream })
+    }
+
+    pub async fn send(&mut self, msg: &Message) -> Result<(), BroadcastError> {
+        send_message(&mut self.stream, msg).await
     }
 }

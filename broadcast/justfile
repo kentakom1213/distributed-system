@@ -5,6 +5,9 @@ binary := "target/release/broadcast"
 build:
     cargo build --release --quiet
 
+run conf: build
+    {{ binary }} {{ conf }}
+
 run-all: build
     mkdir -p logs
     trap 'echo stopping...; kill 0' INT TERM && \
@@ -19,4 +22,4 @@ logs:
     tail -f logs/*.log
 
 clean:
-    rm -rf logs/*.log
+    rm logs/*.log
