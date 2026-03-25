@@ -6,7 +6,7 @@ pub async fn handle_connection(
     node_id: NodeId,
     mut stream: TcpStream,
 ) -> Result<(), BroadcastError> {
-    tracing::info!("node={node_id}: Receive connection");
+    tracing::info!("{node_id}: Receive connection");
 
     Ok(())
 }

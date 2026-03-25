@@ -19,16 +19,16 @@ impl Listener {
         loop {
             match self.listener.accept().await {
                 Ok((stream, addr)) => {
-                    tracing::info!("node={}: connected from {}", node_id, addr);
+                    tracing::info!("{}: connected from {}", node_id, addr);
 
                     tokio::spawn(async move {
                         if let Err(e) = handle_connection(node_id, stream).await {
-                            tracing::error!("node={}: connection error: {}", node_id, e);
+                            tracing::error!("{}: connection error: {}", node_id, e);
                         }
                     });
                 }
                 Err(e) => {
-                    tracing::error!("node={node_id}: accept error: {e}");
+                    tracing::error!("{node_id}: accept error: {e}");
                 }
             }
         }

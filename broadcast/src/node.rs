@@ -34,7 +34,7 @@ impl Node {
         });
 
         tracing::info!(
-            "node={node_id}: Listening on {}",
+            "{node_id}: Listening on {}",
             self.network.listen_addr()
         );
 
