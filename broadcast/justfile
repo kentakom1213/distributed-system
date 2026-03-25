@@ -1,0 +1,22 @@
+set shell := ["bash", "-cu"]
+
+binary := "target/release/broadcast"
+
+build:
+    cargo build --release --quiet
+
+run-all: build
+    mkdir -p logs
+    trap 'echo stopping...; kill 0' INT TERM && \
+    for conf in nodes/*.toml; do \
+        name=$(basename $conf .toml); \
+        echo "start $name"; \
+        {{ binary }} $conf > logs/$name.log 2>&1 & \
+    done; \
+    wait
+
+logs:
+    tail -f logs/*.log
+
+clean:
+    rm -rf logs/*.log
