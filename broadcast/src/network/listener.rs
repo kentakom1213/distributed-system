@@ -2,16 +2,35 @@ use std::net::SocketAddr;
 
 use tokio::net::TcpListener;
 
-use crate::{BroadcastError, network::connection};
+use crate::{message::NodeId, network::connection::handle_connection};
 
-pub async fn run_listener(addr: SocketAddr) -> Result<(), BroadcastError> {
-    let listener = TcpListener::bind(addr).await?;
+pub struct Listener {
+    listener: TcpListener,
+}
 
-    loop {
-        let (stream, peer_addr) = listener.accept().await?;
+impl Listener {
+    pub async fn bind(addr: SocketAddr) -> std::io::Result<Self> {
+        let listener = TcpListener::bind(addr).await?;
 
-        tokio::spawn(async move {
-            connection::handle_connection(stream).await;
-        });
+        Ok(Self { listener })
+    }
+
+    pub async fn run(self, node_id: NodeId) {
+        loop {
+            match self.listener.accept().await {
+                Ok((stream, addr)) => {
+                    tracing::info!("node={}: connected from {}", node_id, addr);
+
+                    tokio::spawn(async move {
+                        if let Err(e) = handle_connection(node_id, stream).await {
+                            tracing::error!("node={}: connection error: {}", node_id, e);
+                        }
+                    });
+                }
+                Err(e) => {
+                    tracing::error!("node={node_id}: accept error: {e}");
+                }
+            }
+        }
     }
 }

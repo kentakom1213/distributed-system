@@ -1,10 +1,15 @@
-use crate::{BroadcastError, broadcast::Broadcast, config::Config, network::Network};
+use crate::{
+    BroadcastError,
+    broadcast::Broadcast,
+    config::Config,
+    network::{Network, listener::Listener},
+};
 
 #[derive(Debug)]
 pub struct Node {
-    config: Config,
-    network: Network,
-    broadcast: Broadcast,
+    pub config: Config,
+    pub network: Network,
+    pub broadcast: Broadcast,
 }
 
 impl Node {
@@ -19,7 +24,22 @@ impl Node {
         }
     }
 
-    pub fn run(&mut self) -> Result<(), BroadcastError> {
-        loop {}
+    pub async fn run(&mut self) -> Result<(), BroadcastError> {
+        let node_id = self.config.node_id;
+
+        let listener = Listener::bind(self.network.listen_addr()).await?;
+
+        tokio::spawn(async move {
+            listener.run(node_id).await;
+        });
+
+        tracing::info!(
+            "node={node_id}: Listening on {}",
+            self.network.listen_addr()
+        );
+
+        tokio::signal::ctrl_c().await?;
+
+        Ok(())
     }
 }

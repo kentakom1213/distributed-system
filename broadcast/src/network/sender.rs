@@ -15,7 +15,7 @@ pub async fn send(addr: SocketAddr, buf: &[u8]) -> Result<(), BroadcastError> {
 pub async fn send_all(peers: &[SocketAddr], buf: &[u8]) {
     for peer in peers {
         if let Err(e) = send(*peer, buf).await {
-            eprintln!("send erro {peer}: {e}");
+            tracing::error!("send error {peer}: {e}");
         }
     }
 }
