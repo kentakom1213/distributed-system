@@ -21,8 +21,12 @@ pub struct MessageId {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Message {
-    Ping,
-    Pong,
+    Ping {
+        from: NodeId,
+    },
+    Pong {
+        from: NodeId,
+    },
     Broadcast {
         id: MessageId,
         sender: NodeId,
@@ -39,6 +43,7 @@ pub async fn send_message<W: AsyncWriteExt + Unpin>(
 
     w.write_all(json.as_bytes()).await?;
     w.write_all(b"\n").await?;
+    w.flush().await?;
 
     Ok(())
 }
@@ -64,8 +69,11 @@ mod test_message {
 
     #[test]
     fn test_serialize() {
-        let ping = Message::Ping;
-        assert_eq!(serde_json::to_string(&ping).unwrap(), r#"{"type":"ping"}"#);
+        let ping = Message::Ping { from: NodeId(1) };
+        assert_eq!(
+            serde_json::to_string(&ping).unwrap(),
+            r#"{"type":"ping","from":1}"#
+        );
 
         let broadcast = Message::Broadcast {
             id: MessageId {
@@ -83,9 +91,9 @@ mod test_message {
 
     #[test]
     fn test_deserialize() {
-        let pong_json = r#"{"type":"pong"}"#;
+        let pong_json = r#"{"type":"pong","from":20}"#;
         let pong: Message = serde_json::from_str(pong_json).unwrap();
-        assert!(matches!(pong, Message::Pong));
+        assert!(matches!(pong, Message::Pong { from: NodeId(20) }));
 
         let broadcast_json =
             r#"{"type":"broadcast","id":{"node":2,"seq":1},"sender":1,"payload":"こんにちは"}"#;
