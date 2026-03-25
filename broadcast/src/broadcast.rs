@@ -8,3 +8,13 @@ pub struct Broadcast {
     seq: u64,
     seen_messages: HashSet<MessageId>,
 }
+
+impl Broadcast {
+    pub fn new(node_id: NodeId) -> Self {
+        Self {
+            node_id,
+            seq: 0,
+            seen_messages: HashSet::new(),
+        }
+    }
+}

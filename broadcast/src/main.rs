@@ -1,6 +1,6 @@
 use std::{fs, path::PathBuf};
 
-use broadcast::{BroadcastError, Config};
+use broadcast::{BroadcastError, Config, Node};
 use clap::Parser;
 
 /// Initialize broadcast node
@@ -22,10 +22,11 @@ fn run() -> Result<(), BroadcastError> {
 
     // ノードの設定を読み込む
     let conf_file = fs::read_to_string(args.conf_path)?;
-
     let conf: Config = toml::from_str(&conf_file)?;
 
-    println!("{conf:?}");
+    // ノードを起動
+    let mut node = Node::new(conf);
+    node.run()?;
 
     Ok(())
 }

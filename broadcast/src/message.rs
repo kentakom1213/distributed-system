@@ -1,7 +1,7 @@
 use serde::Deserialize;
 
-#[derive(Debug, Deserialize)]
-pub struct NodeId(usize);
+#[derive(Debug, Clone, Copy, Deserialize)]
+pub struct NodeId(pub usize);
 
 #[derive(Debug)]
 pub struct MessageId {

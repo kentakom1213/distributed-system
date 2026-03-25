@@ -6,12 +6,12 @@ use crate::message::NodeId;
 
 #[derive(Debug, Deserialize)]
 pub struct Config {
-    node_id: NodeId,
-    network: NetworkConf,
+    pub node_id: NodeId,
+    pub network: NetworkConf,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct NetworkConf {
-    listen_addr: SocketAddr,
-    peers: Vec<SocketAddr>,
+    pub listen_addr: SocketAddr,
+    pub peers: Vec<SocketAddr>,
 }
