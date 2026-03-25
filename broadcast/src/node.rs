@@ -33,10 +33,7 @@ impl Node {
             listener.run(node_id).await;
         });
 
-        tracing::info!(
-            "{node_id}: Listening on {}",
-            self.network.listen_addr()
-        );
+        tracing::info!("{node_id}: Listening on {}", self.network.listen_addr());
 
         tokio::signal::ctrl_c().await?;
 
