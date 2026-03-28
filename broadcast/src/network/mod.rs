@@ -4,6 +4,7 @@ use crate::NetworkConf;
 
 pub mod connection;
 pub mod listener;
+pub mod sender;
 
 #[derive(Debug)]
 pub struct Network {

@@ -17,4 +17,20 @@ impl Broadcast {
             seen_messages: HashSet::new(),
         }
     }
+
+    pub fn node_id(&self) -> NodeId {
+        self.node_id
+    }
+
+    pub fn next_message_id(&mut self) -> MessageId {
+        self.seq += 1;
+        MessageId {
+            node: self.node_id,
+            seq: self.seq,
+        }
+    }
+
+    pub fn record_received(&mut self, id: MessageId) -> bool {
+        self.seen_messages.insert(id)
+    }
 }

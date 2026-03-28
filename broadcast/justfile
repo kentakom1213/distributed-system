@@ -19,7 +19,7 @@ run-all: build
     wait
 
 logs:
-    tail -f logs/*.log
+    multitail logs/*.log
 
 clean:
     rm logs/*.log

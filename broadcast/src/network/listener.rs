@@ -2,7 +2,7 @@ use std::net::SocketAddr;
 
 use tokio::net::TcpListener;
 
-use crate::{message::NodeId, network::connection::handle_connection};
+use crate::{handler::MessageHandler, message::NodeId, network::connection::handle_connection};
 
 pub struct Listener {
     listener: TcpListener,
@@ -15,14 +15,15 @@ impl Listener {
         Ok(Self { listener })
     }
 
-    pub async fn run(self, node_id: NodeId) {
+    pub async fn run(self, node_id: NodeId, handler: MessageHandler) {
         loop {
             match self.listener.accept().await {
                 Ok((stream, addr)) => {
                     tracing::info!("[{node_id}] Connected from {addr}");
+                    let handler = handler.clone();
 
                     tokio::spawn(async move {
-                        if let Err(e) = handle_connection(node_id, stream).await {
+                        if let Err(e) = handle_connection(handler, stream, addr).await {
                             tracing::error!("[{node_id}] Connection error: {e}");
                         }
                     });

@@ -1,6 +1,7 @@
 mod broadcast;
 mod config;
 mod error;
+mod handler;
 mod logger;
 mod message;
 mod network;
