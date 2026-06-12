@@ -9,10 +9,10 @@ CREATE TABLE IF NOT EXISTS jobs (
     
     lease_id TEXT,
     leased_by TEXT,
-    lease_until DATETIME,
+    lease_until TEXT,
     
-    created_at DATETIME NOT NULL,
-    updated_at DATETIME NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
     
     last_error TEXT
 );
