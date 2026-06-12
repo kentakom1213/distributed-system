@@ -11,6 +11,7 @@ import (
 	"time"
 
 	queueserver "github.com/kentakom1213/distributed-system/distq/internal/server"
+	"github.com/kentakom1213/distributed-system/distq/internal/storage"
 	"github.com/spf13/cobra"
 )
 
@@ -25,8 +26,14 @@ var serverCmd = &cobra.Command{
 			syscall.SIGTERM,
 		)
 		defer stop()
+		
+		st, err := storage.Open(ctx, dbPath)
+		if err != nil {
+			return err
+		}
+		defer st.Close()
 
-		handler := queueserver.NewHandler()
+		handler := queueserver.NewHandler(st)
 
 		srv := &http.Server{
 			Addr:              serverAddr,
@@ -66,5 +73,5 @@ func init() {
 	rootCmd.AddCommand(serverCmd)
 
 	serverCmd.Flags().StringVar(&serverAddr, "addr", ":8080", "server address")
-	serverCmd.Flags().StringVar(&dbPath, "db", "distq.db", "sqlite database path")
+	serverCmd.Flags().StringVar(&dbPath, "db", "data/distq.db", "sqlite database path")
 }
