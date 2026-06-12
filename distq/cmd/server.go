@@ -1,6 +1,16 @@
 package cmd
 
 import (
+	"context"
+	"errors"
+	"log/slog"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	queueserver "github.com/kentakom1213/distributed-system/distq/internal/server"
 	"github.com/spf13/cobra"
 )
 
@@ -9,8 +19,41 @@ var serverCmd = &cobra.Command{
 	Use:   "server",
 	Short: "Start the queue server",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cmd.Println("server is not implemented yet")
-		return nil
+		ctx, stop := signal.NotifyContext(
+			context.Background(),
+			os.Interrupt,
+			syscall.SIGTERM,
+		)
+		defer stop()
+
+		handler := queueserver.NewHandler()
+
+		srv := &http.Server{
+			Addr:              serverAddr,
+			Handler:           handler,
+			ReadHeaderTimeout: 5 * time.Second,
+		}
+
+		errCh := make(chan error, 1)
+
+		go func() {
+			slog.Info("queue server started", "addr", serverAddr, "db", dbPath)
+			errCh <- srv.ListenAndServe()
+		}()
+
+		select {
+		case <-ctx.Done():
+			shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+
+			slog.Info("queue server shutting down")
+			return srv.Shutdown(shutdownCtx)
+		case err := <-errCh:
+			if errors.Is(err, http.ErrServerClosed) {
+				return nil
+			}
+			return err
+		}
 	},
 }
 
