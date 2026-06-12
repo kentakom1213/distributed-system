@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/kentakom1213/distributed-system/distq/internal/storage"
 )
@@ -21,6 +22,7 @@ func NewHandler(st *storage.Storage) http.Handler {
 	mux.HandleFunc("GET /help", h.handleHealth)
 	mux.HandleFunc("POST /jobs", h.handleCreateJob)
 	mux.HandleFunc("GET /jobs", h.handleListJobs)
+	mux.HandleFunc("POST /jobs/claim", h.handlePickClaimJob)
 
 	return mux
 }
@@ -58,18 +60,6 @@ func (h *Handler) handleCreateJob(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, job)
 }
 
-func writeJSON(w http.ResponseWriter, status int, v any) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(v)
-}
-
-func writeJSONError(w http.ResponseWriter, status int, message string) {
-	writeJSON(w, status, map[string]string{
-		"error": message,
-	})
-}
-
 func (h *Handler) handleListJobs(w http.ResponseWriter, r *http.Request) {
 	status := storage.JobStatus(r.URL.Query().Get("status"))
 
@@ -83,4 +73,44 @@ func (h *Handler) handleListJobs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, jobs)
+}
+
+type claimJobRequest struct {
+	WorkerID     string `json:"worker_id"`
+	LeaseSeconds int    `json:"lease_seconds"`
+}
+
+func (h *Handler) handlePickClaimJob(w http.ResponseWriter, r *http.Request) {
+	var req claimJobRequest
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSONError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+
+	if req.WorkerID == "" {
+		writeJSONError(w, http.StatusBadRequest, "worker_id is required")
+		return
+	}
+
+	leaseDuration := 30 * time.Second
+	if req.LeaseSeconds > 0 {
+		leaseDuration = time.Duration(req.LeaseSeconds) * time.Second
+	}
+
+	job, err := h.storage.PickNextJob(r.Context(), storage.PickNextJobParams{
+		WorkerID:      req.WorkerID,
+		LeaseDuration: leaseDuration,
+	})
+	if err != nil {
+		writeJSONError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	if job == nil {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, job)
 }
