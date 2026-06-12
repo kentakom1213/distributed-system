@@ -14,9 +14,7 @@ var rootCmd = &cobra.Command{
 
 It is designed for learning worker failure, lease timeout,
 ack, retry, and duplicate execution patterns.`,
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
-	// Run: func(cmd *cobra.Command, args []string) { },
+	SilenceUsage: true,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
