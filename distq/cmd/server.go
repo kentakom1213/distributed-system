@@ -14,16 +14,14 @@ var serverCmd = &cobra.Command{
 	},
 }
 
+var (
+	serverAddr string
+	dbPath     string
+)
+
 func init() {
 	rootCmd.AddCommand(serverCmd)
 
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// serverCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// serverCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	serverCmd.Flags().StringVar(&serverAddr, "addr", ":8080", "server address")
+	serverCmd.Flags().StringVar(&dbPath, "db", "distq.db", "sqlite database path")
 }

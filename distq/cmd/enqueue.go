@@ -14,16 +14,18 @@ var enqueueCmd = &cobra.Command{
 	},
 }
 
+var (
+	enqueueServerURL   string
+	enqueueType        string
+	enqueuePayload     string
+	enqueueMaxAttempts int
+)
+
 func init() {
 	rootCmd.AddCommand(enqueueCmd)
 
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// enqueueCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// enqueueCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	enqueueCmd.Flags().StringVar(&enqueueServerURL, "server", "https://localhost:8080", "queue server URL")
+	enqueueCmd.Flags().StringVar(&enqueueType, "type", "sleep", "job type")
+	enqueueCmd.Flags().StringVar(&enqueuePayload, "payload", `{"seconds": 3}`, "job payload JSON")
+	enqueueCmd.Flags().IntVar(&enqueueMaxAttempts, "max-attempts", 3, "max attempts")
 }
