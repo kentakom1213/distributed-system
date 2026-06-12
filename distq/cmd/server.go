@@ -20,13 +20,18 @@ var serverCmd = &cobra.Command{
 	Use:   "server",
 	Short: "Start the queue server",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+			Level: slog.LevelInfo,
+		}))
+		slog.SetDefault(logger)
+
 		ctx, stop := signal.NotifyContext(
 			context.Background(),
 			os.Interrupt,
 			syscall.SIGTERM,
 		)
 		defer stop()
-		
+
 		st, err := storage.Open(ctx, dbPath)
 		if err != nil {
 			return err

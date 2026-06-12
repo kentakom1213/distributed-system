@@ -24,7 +24,7 @@ func NewHandler(st *storage.Storage) http.Handler {
 	mux.HandleFunc("GET /jobs", h.handleListJobs)
 	mux.HandleFunc("POST /jobs/claim", h.handlePickClaimJob)
 
-	return mux
+	return loggingMiddleware(mux)
 }
 
 type createJobRequest struct {
