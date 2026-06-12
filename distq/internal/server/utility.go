@@ -16,3 +16,10 @@ func writeJSONError(w http.ResponseWriter, status int, message string) {
 		"error": message,
 	})
 }
+
+func valueOrEmpty(v *string) string {
+	if v == nil {
+		return ""
+	}
+	return *v
+}

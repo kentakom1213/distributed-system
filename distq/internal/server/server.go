@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -57,6 +58,12 @@ func (h *Handler) handleCreateJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	slog.Info("job created",
+		"job_id", job.ID,
+		"type", job.Type,
+		"max_attempts", job.MaxAttempts,
+	)
+
 	writeJSON(w, http.StatusCreated, job)
 }
 
@@ -108,9 +115,20 @@ func (h *Handler) handlePickClaimJob(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if job == nil {
+		slog.Info("no job available", "worker_id", req.WorkerID)
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
+
+	slog.Info("job claimed",
+		"job_id", job.ID,
+		"type", job.Type,
+		"worker_id", req.WorkerID,
+		"lease_id", valueOrEmpty(job.LeaseID),
+		"lease_until", job.LeaseUntil,
+		"attempts", job.Attempts,
+		"max_attempts", job.MaxAttempts,
+	)
 
 	writeJSON(w, http.StatusOK, job)
 }
