@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS jobs (
     id TEXT PRIMARY KEY,
     type TEXT NOT NULL,
-    paylaod TEXT NOT NULL,
+    payload TEXT NOT NULL,
     
     status TEXT NOT NULL,
     attempts INTEGER NOT NULL DEFAULT 0,
