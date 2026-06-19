@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 	"time"
@@ -24,6 +25,7 @@ func NewHandler(st *storage.Storage) http.Handler {
 	mux.HandleFunc("POST /jobs", h.handleCreateJob)
 	mux.HandleFunc("GET /jobs", h.handleListJobs)
 	mux.HandleFunc("POST /jobs/claim", h.handlePickClaimJob)
+	mux.HandleFunc("POST /jobs/{id}/ack", h.handleAckJob)
 
 	return loggingMiddleware(mux)
 }
@@ -131,4 +133,68 @@ func (h *Handler) handlePickClaimJob(w http.ResponseWriter, r *http.Request) {
 	)
 
 	writeJSON(w, http.StatusOK, job)
+}
+
+type ackJobRequest struct {
+	LeaseID string `json:"lease_id"`
+}
+
+func (h *Handler) handleAckJob(w http.ResponseWriter, r *http.Request) {
+	jobID := r.PathValue("id")
+	if jobID == "" {
+		writeJSONError(w, http.StatusBadRequest, "job id is required")
+		return
+	}
+
+	var req ackJobRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSONError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+
+	if req.LeaseID == "" {
+		writeJSONError(w, http.StatusBadRequest, "lease_id is required")
+		return
+	}
+
+	if err := h.storage.AckJob(r.Context(), jobID, req.LeaseID); err != nil {
+		switch {
+		case errors.Is(err, storage.ErrLeaseExpired):
+			slog.Warn("ack lease expired",
+				"job_id", jobID,
+				"lease_id", req.LeaseID,
+			)
+			writeJSONError(w, http.StatusConflict, "lease expired")
+			return
+
+		case errors.Is(err, storage.ErrInvalidLease):
+			slog.Warn("invalid ack lease",
+				"job_id", jobID,
+				"lease_id", req.LeaseID,
+			)
+			writeJSONError(w, http.StatusConflict, "invalid lease")
+			return
+
+		case errors.Is(err, storage.ErrJobNotFound):
+			writeJSONError(w, http.StatusConflict, "job not found")
+			return
+
+		case errors.Is(err, storage.ErrJobNotRunning):
+			writeJSONError(w, http.StatusConflict, "job not running")
+			return
+
+		default:
+			writeJSONError(w, http.StatusConflict, err.Error())
+			return
+		}
+	}
+
+	slog.Info("job acknowledgement",
+		"job_id", jobID,
+		"lease_id", req.LeaseID,
+	)
+
+	writeJSON(w, http.StatusOK, map[string]string{
+		"status": "ok",
+	})
 }
