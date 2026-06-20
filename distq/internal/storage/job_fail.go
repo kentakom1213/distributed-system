@@ -8,56 +8,77 @@ import (
 	"time"
 )
 
-func (s *Storage) AckJob(ctx context.Context, jobID, leaseID string) error {
+func (s *Storage) FailJob(
+	ctx context.Context,
+	jobID, leaseID, errorMsg string,
+) (*Job, error) {
 	if jobID == "" {
-		return fmt.Errorf("job id is required")
+		return nil, fmt.Errorf("job id is required")
 	}
 	if leaseID == "" {
-		return fmt.Errorf("lease id is required")
+		return nil, fmt.Errorf("lease id is required")
+	}
+	if errorMsg == "" {
+		errorMsg = "job failed"
 	}
 
 	now := nowJST()
 	nowText := formatTime(now)
 
-	res, err := s.db.ExecContext(ctx, `
+	row := s.db.QueryRowContext(ctx, `
 		UPDATE jobs
 		SET
-			status = ?,
+			status = CASE
+				WHEN attempts >= max_attempts THEN ?
+				ELSE ?
+			END,
 			lease_id = NULL,
 			leased_by = NULL,
 			lease_until = NULL,
-			updated_at = ?
+			updated_at = ?,
+			last_error = ?
 		WHERE
 			id = ?
 			AND lease_id = ?
 			AND status = ?
 			AND lease_until IS NOT NULL
 			AND lease_until >= ?
+		RETURNING
+			id,
+			type,
+			payload,
+			status,
+			attempts,
+			max_attempts,
+			lease_id,
+			leased_by,
+			lease_until,
+			created_at,
+			updated_at,
+			last_error
 	`,
-		string(JobSuccessed),
+		string(JobFailed),
+		string(JobQueued),
 		nowText,
+		errorMsg,
 		jobID,
 		leaseID,
 		string(JobRunning),
 		nowText,
 	)
+
+	job, err := scanJob(row)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, s.explainFailFailure(ctx, jobID, leaseID, now)
+	}
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	n, err := res.RowsAffected()
-	if err != nil {
-		return err
-	}
-
-	if n == 1 {
-		return nil
-	}
-
-	return s.explainAckFailure(ctx, jobID, leaseID, now)
+	return &job, nil
 }
 
-func (s *Storage) explainAckFailure(ctx context.Context, jobID, leaseID string, now time.Time) error {
+func (s *Storage) explainFailFailure(ctx context.Context, jobID, leaseID string, now time.Time) error {
 	var status string
 	var currentLeaseID sql.NullString
 	var leaseUntil sql.NullString

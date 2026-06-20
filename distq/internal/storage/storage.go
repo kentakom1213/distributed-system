@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 	_ "embed"
-	
+
 	_ "modernc.org/sqlite"
 )
 
